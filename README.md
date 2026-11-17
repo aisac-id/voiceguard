@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="promo/logo.png" alt="VoiceGuard logo" width="220">
+<picture><source media="(prefers-color-scheme: dark)" srcset="promo/logo-white.png"><img src="promo/logo.png" alt="VoiceGuard logo" width="220"></picture>
 
 # VoiceGuard — Real vs AI Voice Radar
 
@@ -115,6 +115,7 @@ All artwork is AI-generated for this project — free to reuse under the same MI
 | Asset | File |
 | --- | --- |
 | Logo | [`promo/logo.png`](promo/logo.png) |
+| Logo (dark mode) | [`promo/logo-white.png`](promo/logo-white.png) |
 | Software box | [`promo/software-box.png`](promo/software-box.png) |
 | Poster | [`promo/poster.png`](promo/poster.png) |
 | Banner | [`promo/banner.png`](promo/banner.png) |
