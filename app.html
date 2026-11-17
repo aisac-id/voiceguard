@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoiceGuard — Real vs AI Voice Radar</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
+      <path d="M16 2 28 6v10c0 7-5 12-12 14C9 28 4 23 4 16V6Z" fill="none" stroke="#f5a623" stroke-width="2"/>
+      <path d="M8 16c1.4-4 2.6-4 4 0s2.6 4 4 0" fill="none" stroke="#3ddc84" stroke-width="2" stroke-linecap="round"/>
+      <path d="M17 12h2v8h2v-8h3" fill="none" stroke="#ff4d5e" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <div class="brand-txt">
+      <strong>VOICE<span>GUARD</span></strong>
+      <small>REAL vs AI VOICE RADAR</small>
+    </div>
+  </div>
+  <div class="pills">
+    <span class="pill" id="enginePill">ENGINE · BOOT</span>
+    <span class="pill" id="ratePill">16 kHz</span>
+    <span class="pill" id="voicePill">VOICE 0%</span>
+    <span class="pill pill-replay" id="replayPill" hidden>LOOP?</span>
+  </div>
+  <div class="top-actions">
+    <button class="icon-btn" id="soundBtn" title="Sound (S)">SND</button>
+    <button class="icon-btn" id="pauseBtn" title="Pause (Space)">⏸</button>
+    <button class="icon-btn" id="helpBtn" title="Help (?)">?</button>
+    <a class="icon-btn gh" href="https://github.com/aisac-id/voiceguard" target="_blank" rel="noopener" title="GitHub">GH</a>
+  </div>
+</header>
+
+<main class="deck">
+
+  <!-- ══ left: verdict + scopes + source ══ -->
+  <section class="col-main">
+
+    <div class="verdict-banner" id="verdictBanner" data-v="LISTENING">
+      <div class="dial-wrap">
+        <svg viewBox="0 0 120 120" class="dial">
+          <circle cx="60" cy="60" r="50" class="dial-bg"/>
+          <circle cx="60" cy="60" r="50" class="dial-arc" id="dialArc"/>
+        </svg>
+        <div class="dial-center">
+          <b id="dialScore">–</b>
+          <small>HUMAN</small>
+        </div>
+      </div>
+      <div class="verdict-txt">
+        <div class="verdict-line">
+          <h1 id="verdictWord">LISTENING</h1>
+          <span class="truth-chip" id="truthChip" hidden></span>
+        </div>
+        <p class="subtype" id="verdictSub">WAITING FOR SPEECH</p>
+        <p class="advice" id="verdictAdvice">Pick a source and let the radar gather a few seconds of audio.</p>
+      </div>
+      <div class="level-strip" title="input level">
+        <div class="level-fill" id="levelFill"></div>
+      </div>
+    </div>
+
+    <div class="scope-panel">
+      <div class="scope-head">
+        <span class="panel-title">OSCILLOSCOPE</span>
+        <span class="src-chip" id="srcChip">DEMO REEL</span>
+        <span class="subj-chip" id="subjChip"></span>
+      </div>
+      <canvas id="scopeCanvas" width="900" height="180"></canvas>
+      <div class="scope-head spectro-head">
+        <span class="panel-title">SPECTROGRAM · 0–8 kHz</span>
+        <span class="clock-chip" id="clockChip">00:00</span>
+      </div>
+      <canvas id="spectroCanvas" width="900" height="150"></canvas>
+      <div class="alert-flash" id="alertFlash" hidden></div>
+      <div class="pause-veil" id="pauseVeil" hidden><span>PAUSED — SPACE TO RESUME</span></div>
+      <div class="src-gate" id="srcGate" hidden>
+        <p id="gateMsg">Audio needs a click to start.</p>
+        <button class="btn btn-amber" id="gateBtn">START AUDIO</button>
+      </div>
+    </div>
+
+    <div class="source-bar">
+      <label class="field">
+        <span>SOURCE</span>
+        <select id="sourceSel">
+          <option value="demo">Demo reel (ground truth)</option>
+          <option value="mic">Microphone</option>
+          <option value="tab">Meeting / tab audio</option>
+        </select>
+      </label>
+      <label class="field" id="deviceWrap" hidden>
+        <span>DEVICE</span>
+        <select id="deviceSel"></select>
+      </label>
+      <button class="btn btn-amber" id="captureBtn" hidden>Share tab / screen…</button>
+      <button class="btn" id="monitorBtn" title="Monitor demo audio (M)">MONITOR ON</button>
+      <span class="src-status" id="srcStatus">starting…</span>
+      <button class="btn btn-ghost" id="reportBtn">Export report ↓</button>
+    </div>
+
+    <div class="tune-panel">
+      <div class="panel-title">TUNING DECK</div>
+      <div class="tune-grid">
+        <label class="tune">
+          <span>SENSITIVITY <b id="sensVal">1.00</b></span>
+          <input type="range" id="sensRange" min="0.6" max="1.4" step="0.05" value="1">
+        </label>
+        <label class="tune">
+          <span>EVAL INTERVAL <b id="intVal">300 ms</b></span>
+          <input type="range" id="intRange" min="200" max="1000" step="50" value="300">
+        </label>
+        <div class="toggles">
+          <label class="tgl"><input type="checkbox" id="gridTgl" checked><i></i>Scope grid</label>
+          <label class="tgl"><input type="checkbox" id="spectroTgl" checked><i></i>Spectrogram</label>
+          <label class="tgl"><input type="checkbox" id="alertTgl" checked><i></i>Synthetic alerts</label>
+        </div>
+        <button class="btn btn-ghost" id="resetTuneBtn">Reset tuning</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ right: signals + stats + log ══ -->
+  <aside class="col-side">
+
+    <div class="panel">
+      <div class="panel-title">SIGNAL BREAKDOWN</div>
+      <div class="sig-list" id="sigList"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">SESSION STATS</div>
+      <div class="stat-grid">
+        <div class="stat"><small>F0 MEAN</small><b id="stF0">–</b></div>
+        <div class="stat"><small>F0 SPREAD</small><b id="stCV">–</b></div>
+        <div class="stat"><small>NOISE FLOOR</small><b id="stFloor">–</b></div>
+        <div class="stat"><small>FLUX CV</small><b id="stFlux">–</b></div>
+        <div class="stat"><small>CENTROID CV</small><b id="stCent">–</b></div>
+        <div class="stat"><small>VOICING CLARITY</small><b id="stClar">–</b></div>
+        <div class="stat"><small>HARMONIC NOISE</small><b id="stFlat">–</b></div>
+        <div class="stat"><small>LOOP MATCH</small><b id="stReplay">–</b></div>
+      </div>
+    </div>
+
+    <div class="panel log-panel">
+      <div class="log-head">
+        <span class="panel-title">EVENT LOG</span>
+        <select id="logFilter">
+          <option value="all">all</option>
+          <option value="synthetic">synthetic</option>
+          <option value="real">real</option>
+        </select>
+        <button class="mini-btn" id="clearLogBtn">clear</button>
+      </div>
+      <div class="log-list" id="logList"></div>
+      <p class="log-empty" id="logEmpty">No events yet — verdict changes land here.</p>
+    </div>
+  </aside>
+</main>
+
+<div class="modal-veil" id="helpModal" hidden>
+  <div class="modal">
+    <button class="modal-x" id="helpClose">×</button>
+    <h2>How to use VoiceGuard</h2>
+    <h3>Scan a meeting</h3>
+    <ol>
+      <li>Join the meeting in a normal Chrome tab.</li>
+      <li>Here pick <b>Source → Meeting / tab audio</b>, press <b>Share tab / screen…</b>.</li>
+      <li>Choose the <b>meeting tab</b> and tick <b>“Also share tab audio”</b> — without that checkbox there is nothing to analyze.</li>
+      <li>Watch the verdict: green <b>REAL</b>, amber <b>SUSPECT</b>, red <b>SYNTHETIC</b>.</li>
+    </ol>
+    <h3>The five signals</h3>
+    <ul>
+      <li><b>Pitch life</b> — intonation spread &amp; micro-jitter of the voice fundamental.</li>
+      <li><b>Breath floor</b> — real rooms carry breath and hiss under pauses; TTS renders digital silence.</li>
+      <li><b>Spectral churn</b> — organic articulation changes are uneven; vocoders are metronomic.</li>
+      <li><b>Spectral balance</b> — formant TTS swings violently between buzz and noise bands.</li>
+      <li><b>Voice imperfection</b> — breathy turbulence between harmonics; synthetic vowels are too clean.</li>
+    </ul>
+    <h3>Honest limits</h3>
+    <p>This is <b>heuristic triage, not forensic proof</b>. High-quality neural voice clones can pass; heavily processed or noise-gated real voices can dip into SUSPECT. Treat red as “look closer”, never as an accusation. Use with consent.</p>
+    <h3>Shortcuts</h3>
+    <p><kbd>Space</kbd> pause · <kbd>M</kbd> monitor · <kbd>S</kbd> sound · <kbd>?</kbd> help · <kbd>Esc</kbd> close</p>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
